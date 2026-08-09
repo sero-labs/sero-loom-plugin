@@ -52,7 +52,8 @@
       "minSeroVersion": "0.1.0",
       "runtimeAbi": 2,
       "requiredHostCapabilities": [
-        "appAgent.invokeTool"
+        "appAgent.invokeTool",
+        "ui.dashboardBackground"
       ],
       "bridgeTools": false,
       "preBuilt": false

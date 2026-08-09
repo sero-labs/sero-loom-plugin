@@ -45,6 +45,22 @@ function downloadDataUrl(dataUrl: string, filename: string): void {
   a.remove();
 }
 
+interface DashboardHostBridge {
+  setBackground(dataUrl: string | null): Promise<void>;
+}
+
+function getDashboardHostBridge(): DashboardHostBridge {
+  const sero = Reflect.get(window, 'sero');
+  if (!sero || typeof sero !== 'object') {
+    throw new Error('Sero host bridge is unavailable');
+  }
+  const dashboard = Reflect.get(sero, 'dashboard');
+  if (!dashboard || typeof dashboard !== 'object' || typeof Reflect.get(dashboard, 'setBackground') !== 'function') {
+    throw new Error('This Sero version cannot set dashboard backgrounds');
+  }
+  return dashboard as DashboardHostBridge;
+}
+
 export function LoomApp() {
   const [rawState, updateState] = useAppState<LoomState>(DEFAULT_LOOM_STATE);
   const state = useMemo(() => normalizeLoomState(rawState), [rawState]);
@@ -202,6 +218,26 @@ export function LoomApp() {
   }, [capture, capturing, ready, state.piece.title, state.settings, tools]);
   const onCaptureClick = useCallback(() => void onCapture(), [onCapture]);
 
+  const onSetDashboardBackground = useCallback(async () => {
+    if (capturing || !ready) return;
+    setCapturing(true);
+    setToast('Rendering dashboard background…');
+    const dims = captureDims(state.settings);
+    try {
+      const dataUrl = capture(dims.w, dims.h);
+      await getDashboardHostBridge().setBackground(dataUrl);
+      setToast('Dashboard background updated');
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : 'Dashboard background failed');
+    } finally {
+      setCapturing(false);
+    }
+  }, [capture, capturing, ready, state.settings]);
+  const onSetDashboardBackgroundClick = useCallback(
+    () => void onSetDashboardBackground(),
+    [onSetDashboardBackground],
+  );
+
   // ── Gallery actions ───────────────────────────────────────────
   const onSave = useCallback(
     (name: string) => {
@@ -305,6 +341,7 @@ export function LoomApp() {
             paused={state.settings.paused}
             onTogglePause={onTogglePause}
             onCapture={onCaptureClick}
+            onSetDashboardBackground={onSetDashboardBackgroundClick}
             capturing={capturing}
             onAmbient={onAmbient}
             buildError={state.build?.status === 'error'}
