@@ -21,6 +21,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { useLoomRuntime } from './hooks/useLoomRuntime';
 import {
   captureDims,
+  dashboardCaptureDims,
   deletePreset,
   loadPreset,
   savePreset,
@@ -222,9 +223,9 @@ export function LoomApp() {
     if (capturing || !ready) return;
     setCapturing(true);
     setToast('Rendering dashboard background…');
-    const dims = captureDims(state.settings);
+    const dims = dashboardCaptureDims(state.settings);
     try {
-      const dataUrl = capture(dims.w, dims.h);
+      const dataUrl = capture(dims.w, dims.h, 'image/jpeg', 0.85);
       await getDashboardHostBridge().setBackground(dataUrl);
       setToast('Dashboard background updated');
     } catch (err) {
