@@ -7,6 +7,8 @@ import { randomUUID } from 'node:crypto';
 import { promises as fs, watch, type FSWatcher } from 'node:fs';
 import path from 'node:path';
 
+import { withStateLock } from '@sero-ai/extension-runtime';
+
 import type { LoomState } from '../shared/types';
 import { DEFAULT_LOOM_STATE, normalizeLoomState, structuredCloneState } from '../shared/types';
 
@@ -55,9 +57,12 @@ async function atomicWrite(filePath: string, state: LoomState): Promise<void> {
 const txQueues = new Map<string, Promise<unknown>>();
 
 /**
- * Atomically read, mutate, and write Loom state under a per-path lock. The
- * mutator runs against freshly-read state and may mutate it in place or return a
- * new state. Returns the persisted state.
+ * Atomically read, mutate, and write Loom state. The in-process queue
+ * serializes local callers; the transaction itself runs under the shared
+ * cross-process `<stateFile>.lock` mutex the Sero host also takes around UI
+ * writes, so neither side can clobber the other (sero#428). The mutator runs
+ * against freshly-read state and may mutate it in place or return a new state.
+ * Returns the persisted state.
  */
 export function updateLoomState(
   filePath: string,
@@ -66,12 +71,14 @@ export function updateLoomState(
   const prev = txQueues.get(filePath) ?? Promise.resolve();
   const run = prev
     .catch(() => undefined)
-    .then(async () => {
-      const state = await readState(filePath);
-      const next = mutate(state) ?? state;
-      await atomicWrite(filePath, next);
-      return next;
-    });
+    .then(() =>
+      withStateLock(filePath, async () => {
+        const state = await readState(filePath);
+        const next = mutate(state) ?? state;
+        await atomicWrite(filePath, next);
+        return next;
+      }),
+    );
   txQueues.set(filePath, run.catch(() => undefined));
   return run;
 }
