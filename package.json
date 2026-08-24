@@ -1,7 +1,7 @@
 {
   "name": "@sero-ai/plugin-loom",
   "version": "0.2.1",
-  "description": "Loom — generative art studio for Sero. The agent authors real GLSL shaders, looks at its own output, and refines. Wallpaper capture included.",
+  "description": "Loom \u2014 generative art studio for Sero. The agent authors real GLSL shaders, looks at its own output, and refines. Wallpaper capture included.",
   "type": "module",
   "keywords": [
     "pi-package",
@@ -91,5 +91,8 @@
     "@earendil-works/pi-ai": "0.83.0",
     "@earendil-works/pi-coding-agent": "0.83.0",
     "@earendil-works/pi-tui": "0.83.0"
+  },
+  "overrides": {
+    "@sero-ai/common": "^0.11.0"
   }
 }
