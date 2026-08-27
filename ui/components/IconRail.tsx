@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Camera, Code2, Images, Moon, Pause, Play, Settings2, SlidersHorizontal, type LucideIcon } from 'lucide-react';
+import { Camera, Code2, Images, LayoutDashboard, Moon, Pause, Play, Settings2, SlidersHorizontal, type LucideIcon } from 'lucide-react';
 
 export type PanelId = 'controls' | 'gallery' | 'code' | 'settings';
 
@@ -44,6 +44,7 @@ export const IconRail = memo(function IconRail({
   paused,
   onTogglePause,
   onCapture,
+  onSetDashboardBackground,
   capturing,
   onAmbient,
   buildError,
@@ -53,6 +54,7 @@ export const IconRail = memo(function IconRail({
   paused: boolean;
   onTogglePause: () => void;
   onCapture: () => void;
+  onSetDashboardBackground: () => void;
   capturing: boolean;
   onAmbient: () => void;
   buildError: boolean;
@@ -70,6 +72,7 @@ export const IconRail = memo(function IconRail({
       <div className="mx-1.5 my-0.5 border-t border-border/60" />
       <RailButton icon={paused ? Play : Pause} title={paused ? 'Play' : 'Pause'} onClick={onTogglePause} />
       <RailButton icon={Camera} title="Capture wallpaper" onClick={onCapture} busy={capturing} />
+      <RailButton icon={LayoutDashboard} title="Set dashboard background" onClick={onSetDashboardBackground} busy={capturing} />
       <RailButton icon={Moon} title="Ambient mode (Esc to exit)" onClick={onAmbient} />
     </div>
   );

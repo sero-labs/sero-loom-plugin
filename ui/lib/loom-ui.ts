@@ -113,6 +113,15 @@ export function captureDims(settings: LoomSettings): Dims {
   }
 }
 
+export function dashboardCaptureDims(settings: LoomSettings): Dims {
+  const source = captureDims(settings);
+  const scale = Math.min(1, 2560 / source.w, 1600 / source.h);
+  return {
+    w: Math.round(source.w * scale),
+    h: Math.round(source.h * scale),
+  };
+}
+
 const hex = (c: number): string =>
   Math.round(Math.min(1, Math.max(0, c)) * 255)
     .toString(16)

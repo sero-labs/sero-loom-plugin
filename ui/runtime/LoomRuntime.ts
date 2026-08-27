@@ -14,6 +14,7 @@ import {
   type ParamValue,
 } from '../../shared/types';
 import { compileProgram, createContext, createTarget, deleteTarget, drawFullscreen, supportsFloatTargets, type Target } from './gl';
+import { readTargetToDataUrl, type CaptureMimeType } from './capture';
 import { ProgramSet, type FrameEnv } from './program-set';
 
 export const BLIT_VS = `#version 300 es
@@ -390,27 +391,6 @@ export class LoomRuntime {
 
   // ── Captures ────────────────────────────────────────────────
 
-  private readTargetToDataUrl(target: Target, type: 'image/png' | 'image/jpeg', quality?: number): string {
-    const gl = this.gl;
-    if (!gl) throw new Error('Runtime not initialized');
-    const { width, height } = target;
-    const pixels = new Uint8Array(width * height * 4);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
-    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-    // GL reads bottom-up; canvas wants top-down.
-    const flipped = new Uint8ClampedArray(width * height * 4);
-    const row = width * 4;
-    for (let y = 0; y < height; y++) flipped.set(pixels.subarray(y * row, (y + 1) * row), (height - 1 - y) * row);
-    for (let i = 3; i < flipped.length; i += 4) flipped[i] = 255;
-
-    const out = document.createElement('canvas');
-    out.width = width;
-    out.height = height;
-    out.getContext('2d')!.putImageData(new ImageData(flipped, width, height), 0, 0);
-    return out.toDataURL(type, quality);
-  }
 
   /**
    * Render frames of the current piece into a THROWAWAY ProgramSet — never the
@@ -423,7 +403,7 @@ export class LoomRuntime {
     height: number,
     count: number,
     spacingSeconds: number,
-    type: 'image/png' | 'image/jpeg',
+    type: CaptureMimeType,
     quality?: number,
   ): string[] {
     const gl = this.gl;
@@ -456,7 +436,7 @@ export class LoomRuntime {
         const image = set.latestImage;
         if (!image) break;
         this.blitTo(capTarget.fbo, width, height, image, 1);
-        urls.push(this.readTargetToDataUrl(capTarget, type, quality));
+        urls.push(readTargetToDataUrl(gl, capTarget, type, quality));
       }
     } finally {
       deleteTarget(gl, capTarget);
@@ -465,9 +445,14 @@ export class LoomRuntime {
     return urls;
   }
 
-  /** Offscreen wallpaper render at the target resolution/aspect (recomposed, not stretched) → PNG data URL. */
-  capture(width: number, height: number): string {
-    const [url] = this.renderPieceFrames(width, height, 1, 0, 'image/png');
+  /** Offscreen wallpaper render at the target resolution/aspect (recomposed, not stretched). */
+  capture(
+    width: number,
+    height: number,
+    type: 'image/png' | 'image/jpeg' = 'image/png',
+    quality?: number,
+  ): string {
+    const [url] = this.renderPieceFrames(width, height, 1, 0, type, quality);
     if (!url) throw new Error('No image pass output');
     return url;
   }

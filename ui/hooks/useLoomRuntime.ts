@@ -9,8 +9,13 @@ export interface RuntimeStatus {
 }
 
 export interface UseLoomRuntimeResult extends RuntimeStatus {
-  /** Offscreen wallpaper render at the given size → PNG data URL. */
-  capture: (width: number, height: number) => string;
+  /** Offscreen wallpaper render at the given size and encoding. */
+  capture: (
+    width: number,
+    height: number,
+    type?: 'image/png' | 'image/jpeg',
+    quality?: number,
+  ) => string;
   /** Small frames for the agent's eyes → JPEG data URLs. */
   seeFrames: (width: number, frames: number, spacingSeconds: number) => string[];
 }
@@ -111,10 +116,15 @@ export function useLoomRuntime(
     runtimeRef.current?.setTransitionMs(opts.transitionMs);
   }, [opts.transitionMs]);
 
-  const capture = (width: number, height: number): string => {
+  const capture = (
+    width: number,
+    height: number,
+    type?: 'image/png' | 'image/jpeg',
+    quality?: number,
+  ): string => {
     const runtime = runtimeRef.current;
     if (!runtime) throw new Error('Renderer not ready');
-    return runtime.capture(width, height);
+    return runtime.capture(width, height, type, quality);
   };
 
   const seeFrames = (width: number, frames: number, spacingSeconds: number): string[] => {
